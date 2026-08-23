@@ -1,10 +1,29 @@
-import Image from "next/image";
 import Link from "next/link";
+import type { HeroApi } from "@/types/api/hero";
+import { resolveHeroCtaHref } from "@/lib/api/resolve-href";
 
-export default function Hero() {
+// A 200 response body of `null` from GET /homepage/hero is valid (hero
+// disabled) — fall back to the original local asset/copy rather than break.
+export default function Hero({ hero }: { hero: HeroApi | null }) {
+  const image = hero?.desktopImage ?? "/home/hero-store.jpg";
+  const eyebrow = hero?.eyebrow ?? "HŸP MIAMI";
+  const title = hero?.title ?? "The Curated Standard";
+  const ctaLabel = hero?.ctaLabel ?? "Find Your Style";
+  const ctaHref = resolveHeroCtaHref(hero?.ctaHref, "/collections/sneakers");
+
   return (
     <section className="relative flex h-[85vh] min-h-[520px] items-end overflow-hidden bg-black">
-      <Image src="/home/hero-store.jpg" alt="Inside the HYP Miami store" fill priority className="object-cover" />
+      {/* Plain <img>, not next/image: this src can be a remote Supabase URL
+          from the API, and next/image's dev-mode config resolution has a
+          confirmed cold-start race that can wrongly reject a valid remote
+          host on the very first render after a server restart. A plain
+          <img> never goes through that validation, so it can't fail. */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={image}
+        alt="Inside the HYP Miami store"
+        className="absolute inset-0 h-full w-full object-cover"
+      />
       <div
         className="absolute inset-0"
         style={{
@@ -12,14 +31,16 @@ export default function Hero() {
         }}
       />
       <div className="relative z-10 mx-auto w-full max-w-7xl px-4 pb-16 text-white sm:px-6">
-        <p className="text-sm font-semibold tracking-wide">HŸP MIAMI</p>
-        <h1 className="mt-2 max-w-xl text-4xl font-medium sm:text-6xl">The Curated Standard</h1>
-        <Link
-          href="/collections/sneakers"
-          className="mt-6 inline-block border border-white bg-white px-6 py-3 text-xs font-semibold uppercase tracking-wide text-black hover:bg-white/90"
-        >
-          Find Your Style
-        </Link>
+        <p className="text-sm font-semibold tracking-wide">{eyebrow}</p>
+        <h1 className="mt-2 max-w-xl text-4xl font-medium sm:text-6xl">{title}</h1>
+        {ctaLabel && (
+          <Link
+            href={ctaHref}
+            className="mt-6 inline-block border border-white bg-white px-6 py-3 text-xs font-semibold uppercase tracking-wide text-black hover:bg-white/90"
+          >
+            {ctaLabel}
+          </Link>
+        )}
       </div>
     </section>
   );

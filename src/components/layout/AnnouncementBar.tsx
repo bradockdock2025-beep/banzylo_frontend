@@ -1,13 +1,13 @@
-const MESSAGES = [
-  "FREE SHIPPING ON ORDERS OVER $500",
-  "SAME DAY SHIPPING",
-  "100% AUTHENTIC GUARANTEED",
-  "BUY NOW PAY LATER AVAILABLE",
-  "LOCAL SAME DAY DELIVERY!",
-];
+import type { AnnouncementApi } from "@/types/api/announcement";
 
-export default function AnnouncementBar() {
-  const text = MESSAGES.join("   |   ");
+export default function AnnouncementBar({ announcements }: { announcements: AnnouncementApi[] }) {
+  if (announcements.length === 0) return null;
+
+  const text = announcements
+    .slice()
+    .sort((a, b) => a.position - b.position)
+    .map((a) => a.text)
+    .join("   |   ");
 
   return (
     <div className="overflow-hidden bg-black py-2 text-white">

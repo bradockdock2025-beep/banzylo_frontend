@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { LOCATIONS } from "@/data/locations";
+import NewsletterForm from "./NewsletterForm";
 
 // Quick Links and social profiles extracted verbatim from the real hypmiami.com footer.
 const QUICK_LINKS = [
@@ -66,19 +67,7 @@ export default function Footer() {
           <p className="mt-2 text-sm text-white/70">
             Join our mailing list and receive a coupon for your purchase!
           </p>
-          <form className="mt-4 flex">
-            <input
-              type="email"
-              placeholder="Email"
-              className="w-full border border-white/30 bg-transparent px-3 py-2 text-sm text-white placeholder:text-white/40 focus:border-white focus:outline-none"
-            />
-            <button
-              type="submit"
-              className="shrink-0 border border-white bg-white px-4 py-2 text-sm font-medium text-black hover:bg-white/90"
-            >
-              Subscribe
-            </button>
-          </form>
+          <NewsletterForm />
         </div>
       </div>
 

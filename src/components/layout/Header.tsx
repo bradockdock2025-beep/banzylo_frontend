@@ -4,25 +4,64 @@ import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
 import AnnouncementBar from "./AnnouncementBar";
+import type { AnnouncementApi } from "@/types/api/announcement";
+import type { CategoryApi } from "@/types/api/category";
+import { resolveCollectionHref } from "@/lib/api/resolve-href";
 
-// Primary nav items and hrefs match the real hypmiami.com header exactly
-// (Sell -> the real external consignment app link).
-const NAV_ITEMS = [
+interface NavItem {
+  label: string;
+  href: string;
+  external?: boolean;
+}
+
+// The API's category `name` ("Sneakers") doesn't match the real, pixel-
+// verified header label ("Footwear") for that section on hypmiami.com — keep
+// the label mapping local, only source structure/existence from the API.
+const NAV_LABEL_OVERRIDES: Record<string, string> = {
+  sneakers: "Footwear",
+};
+
+// Used only if the API is unreachable at request time (getCategories() then
+// resolves to []) — primary nav must never fully disappear.
+const FALLBACK_CATEGORY_ITEMS: NavItem[] = [
   { label: "Footwear", href: "/collections/sneakers" },
   { label: "Apparel", href: "/collections/apparel" },
   { label: "Accessories", href: "/collections/accessories" },
+];
+
+// Institutional pages have no backend endpoint (guide §12) — stay static.
+const STATIC_NAV_ITEMS: NavItem[] = [
   { label: "Contact", href: "/contact" },
   { label: "Locations", href: "/locations" },
   { label: "Sell", href: "https://model-r.lovable.app/hypmiami", external: true },
   { label: "Inquire", href: "/inquire" },
 ];
 
-export default function Header() {
+function buildNavItems(categories: CategoryApi[]): NavItem[] {
+  const categoryItems = categories
+    .filter((c) => c.parentId === null)
+    .flatMap((c): NavItem[] => {
+      const href = resolveCollectionHref(c.slug);
+      if (!href) return [];
+      return [{ label: NAV_LABEL_OVERRIDES[c.slug] ?? c.name, href }];
+    });
+
+  return [...(categoryItems.length > 0 ? categoryItems : FALLBACK_CATEGORY_ITEMS), ...STATIC_NAV_ITEMS];
+}
+
+export default function Header({
+  categories,
+  announcements,
+}: {
+  categories: CategoryApi[];
+  announcements: AnnouncementApi[];
+}) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const NAV_ITEMS = buildNavItems(categories);
 
   return (
     <header className="sticky top-0 z-50 bg-white text-black">
-      <AnnouncementBar />
+      <AnnouncementBar announcements={announcements} />
 
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6">
         <Link href="/" className="flex items-center gap-2">
