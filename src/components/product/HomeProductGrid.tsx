@@ -4,7 +4,7 @@ import HomeProductCard from "./HomeProductCard";
 export default function HomeProductGrid({
   products,
   columns = 6,
-  imageBg = "white",
+  imageBg = "neutral",
 }: {
   products: ProductCardVM[];
   columns?: 1 | 3 | 4 | 6;

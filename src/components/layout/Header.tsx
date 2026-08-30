@@ -7,6 +7,7 @@ import AnnouncementBar from "./AnnouncementBar";
 import type { AnnouncementApi } from "@/types/api/announcement";
 import type { CategoryApi } from "@/types/api/category";
 import { resolveCollectionHref } from "@/lib/api/resolve-href";
+import { useCart } from "@/components/providers/CartProvider";
 
 interface NavItem {
   label: string;
@@ -89,9 +90,7 @@ export default function Header({
           <Link href="/search" aria-label="Search" className="hidden sm:block">
             <SearchIcon />
           </Link>
-          <Link href="/cart" aria-label="Cart">
-            <CartIcon />
-          </Link>
+          <CartButton />
           <button className="md:hidden" aria-label="Menu" onClick={() => setMobileOpen((v) => !v)}>
             <MenuIcon />
           </button>
@@ -155,6 +154,20 @@ function CartIcon() {
       <circle cx="9" cy="20" r="1" />
       <circle cx="18" cy="20" r="1" />
     </svg>
+  );
+}
+
+function CartButton() {
+  const { count, openDrawer } = useCart();
+  return (
+    <button type="button" onClick={openDrawer} aria-label={`Cart (${count})`} className="relative">
+      <CartIcon />
+      {count > 0 && (
+        <span className="absolute -right-2 -top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-black px-1 text-[10px] font-semibold leading-none text-white">
+          {count}
+        </span>
+      )}
+    </button>
   );
 }
 

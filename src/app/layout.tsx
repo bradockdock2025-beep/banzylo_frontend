@@ -5,6 +5,9 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { getCategories } from "@/lib/api/categories";
 import { getAnnouncements } from "@/lib/api/announcements";
+import { CatalogCacheProvider } from "@/components/providers/CatalogCacheProvider";
+import { CartProvider } from "@/components/providers/CartProvider";
+import CartDrawer from "@/components/cart/CartDrawer";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -33,9 +36,14 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col">
-        <Header categories={categories} announcements={announcements} />
-        <main className="flex-1">{children}</main>
-        <Footer />
+        <CatalogCacheProvider>
+          <CartProvider>
+            <Header categories={categories} announcements={announcements} />
+            <main className="flex-1">{children}</main>
+            <Footer />
+            <CartDrawer />
+          </CartProvider>
+        </CatalogCacheProvider>
       </body>
     </html>
   );

@@ -1,10 +1,14 @@
-import Image from "next/image";
 import { notFound } from "next/navigation";
-import { getAllProducts, getProductBySlug } from "@/lib/products";
+import { getProductDetail, getAlsoViewed } from "@/lib/api/product-detail";
+import ProductGallery from "@/components/product/ProductGallery";
+import ProductPurchasePanel from "@/components/product/ProductPurchasePanel";
+import ProductRail from "@/components/product/ProductRail";
+import RecentlyViewed from "@/components/product/RecentlyViewed";
 
-export function generateStaticParams() {
-  return getAllProducts().map((p) => ({ slug: p.slug }));
-}
+// PRODUCT-DETAIL-INTEGRACAO/PLANO-INTEGRACAO-PRODUCT-DETAIL.md:
+// PDP data is 100% API-sourced (no mock). No generateStaticParams — no
+// endpoint lists every product slug, so pages render on demand within the
+// apiFetch revalidate window.
 
 export default async function ProductPage({
   params,
@@ -12,44 +16,39 @@ export default async function ProductPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const product = getProductBySlug(slug);
 
+  const product = await getProductDetail(slug);
   if (!product) {
     notFound();
   }
 
+  const alsoViewed = await getAlsoViewed(product.id);
+
   return (
-    <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
-      <div className="grid grid-cols-1 gap-10 md:grid-cols-2">
-        <div className="grid grid-cols-2 gap-3">
-          {product.images.map((src, i) => (
-            <div key={src} className="relative aspect-square overflow-hidden bg-neutral-100">
-              <Image
-                src={src}
-                alt={`${product.title} ${i + 1}`}
-                fill
-                sizes="(min-width: 768px) 25vw, 50vw"
-                className="object-cover"
-                priority={i === 0}
-              />
-            </div>
-          ))}
-        </div>
-
-        <div>
-          <p className="text-xs uppercase tracking-wide text-neutral-500">{product.brand}</p>
-          <h1 className="mt-1 text-3xl font-semibold text-neutral-900">{product.title}</h1>
-          <p className="mt-4 text-2xl text-neutral-900">${product.price.toFixed(2)}</p>
-
-          <button className="mt-8 w-full border border-black bg-black px-6 py-4 text-sm font-medium uppercase tracking-wide text-white hover:bg-neutral-800">
-            Add to Cart
-          </button>
-
-          <div className="mt-10 border-t border-neutral-200 pt-6 text-sm text-neutral-600">
-            <p>Category: {product.category}</p>
+    <div>
+      <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+        <div className="flex flex-col gap-10 lg:flex-row lg:items-start lg:gap-14">
+          <div className="min-w-0 lg:w-[58%]">
+            <ProductGallery images={product.images} title={product.name} />
+          </div>
+          <div className="min-w-0 lg:w-[42%]">
+            <ProductPurchasePanel product={product} />
           </div>
         </div>
       </div>
+
+      <ProductRail title="You May Also Like" products={alsoViewed} />
+
+      <RecentlyViewed
+        current={{
+          id: product.id,
+          slug: product.slug,
+          name: product.name,
+          brandName: product.brandName,
+          imageUrl: product.images[0] ?? null,
+          priceFrom: product.priceFrom,
+        }}
+      />
     </div>
   );
 }

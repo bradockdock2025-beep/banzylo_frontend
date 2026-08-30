@@ -26,3 +26,21 @@ export const SNEAKER_SIZES: string[] = [
   "15.5 Mens / 17 Womens",
   "16 Mens / 17.5 Womens",
 ];
+
+// Apparel size grade — the same xs–xxl grade the `size_apparel` catalog
+// facet exposes (GUIA-INTEGRACAO-FILTRO-SIZE.md §2). Used by the product
+// detail page's size selector when a product is in the apparel category.
+export const APPAREL_SIZES: string[] = ["XS", "S", "M", "L", "XL", "XXL"];
+
+// Accessories aren't sized in this catalog (GUIA-INTEGRACAO-FILTRO-SIZE.md
+// §1) — the selector still renders a single explicit option.
+export const ONE_SIZE: string[] = ["One Size"];
+
+// Picks the size list for a product's category, mirroring the same
+// per-category split the catalog facets use (size_men/… vs size_apparel vs
+// none).
+export function sizesForCategory(category: "sneakers" | "apparel" | "accessories"): string[] {
+  if (category === "sneakers") return SNEAKER_SIZES;
+  if (category === "apparel") return APPAREL_SIZES;
+  return ONE_SIZE;
+}

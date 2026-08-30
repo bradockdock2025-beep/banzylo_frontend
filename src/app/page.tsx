@@ -4,6 +4,7 @@ import NewArrivals from "@/components/home/NewArrivals";
 import CategoryBanners from "@/components/home/CategoryBanners";
 import BrandSection from "@/components/home/BrandSection";
 import AboutSection from "@/components/home/AboutSection";
+import CollectionsPrefetch from "@/components/home/CollectionsPrefetch";
 import { getHero, getTiles } from "@/lib/api/homepage";
 import { getNewArrivals } from "@/lib/api/new-arrivals";
 import { getBrandCarousels } from "@/lib/api/brand-carousels";
@@ -17,13 +18,14 @@ export default async function Home() {
     getHero(),
     getTiles("categorias-destaque"),
     getNewArrivals(),
-    getBrandCarousels(CURATED_BRAND_SECTIONS.map((section) => section.slug)),
+    getBrandCarousels(CURATED_BRAND_SECTIONS),
   ]);
 
   const about = getAboutSection();
 
   return (
     <div>
+      <CollectionsPrefetch />
       <Hero hero={hero} />
       <BrandLogoStrip />
       <NewArrivals

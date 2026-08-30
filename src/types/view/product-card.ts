@@ -12,6 +12,4 @@ export interface ProductCardVM {
   secondaryImageUrl?: string | null;
   priceFrom: number;
   isNew?: boolean;
-  /** null when the source endpoint doesn't expose a variant to add (see brand-carousels.ts) — quick-add button is omitted, never guessed. */
-  variantId: string | null;
 }

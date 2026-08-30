@@ -20,6 +20,11 @@ export const REVALIDATE = {
   tiles: 300,
   newArrivals: 120,
   brandCarousels: 120,
+  // Collection pages (grid + filter sidebar) — shorter window than the
+  // homepage's showcase sections since users browsing here are closer to
+  // purchase intent (stock/price changes matter more here).
+  catalogProducts: 60,
+  catalogFilters: 60,
 } as const;
 
 // Real category UUIDs confirmed live against the backend (2026-08-23) — see

@@ -1,6 +1,5 @@
 import Link from "next/link";
 import type { ProductCardVM } from "@/types/view/product-card";
-import QuickAddButton from "./QuickAddButton";
 
 // Sibling of ProductCard.tsx, kept deliberately separate: it consumes the
 // API-backed ProductCardVM shape (nullable slug/brand) instead of the mock
@@ -8,7 +7,7 @@ import QuickAddButton from "./QuickAddButton";
 // PLANO-INTEGRACAO-HOMEPAGE.md §5 for why those pages aren't touched here.
 export default function HomeProductCard({
   product,
-  imageBg = "white",
+  imageBg = "neutral",
 }: {
   product: ProductCardVM;
   imageBg?: "white" | "neutral";
@@ -36,12 +35,6 @@ export default function HomeProductCard({
             className="absolute inset-0 h-full w-full object-cover opacity-0 transition-opacity duration-300 group-hover:opacity-100"
           />
         )}
-        {product.isNew && (
-          <span className="absolute left-2 top-2 bg-black px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-white">
-            New
-          </span>
-        )}
-        {product.variantId && <QuickAddButton variantId={product.variantId} />}
       </div>
       <div className="mt-3 space-y-1">
         {product.brandName && (

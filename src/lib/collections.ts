@@ -1,12 +1,20 @@
-import { CATEGORIES, getProductsByCategory, getAllProducts } from "@/lib/products";
+import { getAllProducts, CATEGORIES } from "@/lib/products";
 import { BRANDS } from "@/data/brands";
 import type { Product, ProductCategory } from "@/types/product";
 
-export interface Collection {
+// Brand collections only (/collections/chrome-hearts etc.) — mock catalog,
+// not integrated with the real API this phase, see
+// PLANO-INTEGRACAO-ACCESSORIES.md §8. Category collections
+// (sneakers/apparel/accessories + subcategories) are resolved directly in
+// app/collections/[handle]/page.tsx against the real GET /categories tree —
+// this file used to also handle that branch against a mock CATEGORIES list,
+// which is now genuinely dead code once real categories always resolve
+// first, so it's been removed rather than left in place unused.
+
+export interface BrandCollection {
   handle: string;
   title: string;
   categoryBadge: string | null;
-  /** The resolved category (literal for a category collection, majority category for a brand collection). */
   category: ProductCategory | null;
   products: Product[];
 }
@@ -27,35 +35,23 @@ function majorityCategory(products: Product[]): ProductCategory | null {
   return entries[0][0] as ProductCategory;
 }
 
-export function getAllCollectionHandles(): string[] {
-  return [...CATEGORIES.map((c) => c.slug), ...BRANDS.map((b) => b.slug)];
+export function getAllBrandHandles(): string[] {
+  return BRANDS.map((b) => b.slug);
 }
 
-export function getCollection(handle: string): Collection | null {
-  const category = CATEGORIES.find((c) => c.slug === handle);
-  if (category) {
-    return {
-      handle,
-      title: category.label,
-      categoryBadge: null,
-      category: category.slug,
-      products: getProductsByCategory(category.slug),
-    };
-  }
-
+export function getBrandCollection(handle: string): BrandCollection | null {
   const brand = BRANDS.find((b) => b.slug === handle);
-  if (brand) {
-    const products = getAllProducts().filter((p) => slugify(p.brand) === handle);
-    const resolvedCategory = majorityCategory(products);
-    const badge = resolvedCategory ? CATEGORIES.find((c) => c.slug === resolvedCategory)?.label ?? null : null;
-    return {
-      handle,
-      title: brand.name,
-      categoryBadge: badge,
-      category: resolvedCategory,
-      products,
-    };
-  }
+  if (!brand) return null;
 
-  return null;
+  const products = getAllProducts().filter((p) => slugify(p.brand) === handle);
+  const resolvedCategory = majorityCategory(products);
+  const badge = resolvedCategory ? CATEGORIES.find((c) => c.slug === resolvedCategory)?.label ?? null : null;
+
+  return {
+    handle,
+    title: brand.name,
+    categoryBadge: badge,
+    category: resolvedCategory,
+    products,
+  };
 }

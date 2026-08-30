@@ -1,5 +1,12 @@
-import { getAllProducts } from "@/lib/products";
+import { getAllProducts, toProductCardVM } from "@/lib/products";
 import ProductGrid from "@/components/product/ProductGrid";
+
+// Search still runs entirely on the mock catalog (not integrated this phase
+// — see PLANO-INTEGRACAO-ACCESSORIES.md §11.2). ProductGrid/ProductCard were
+// migrated to ProductCardVM for the collection page rebuild; toProductCardVM
+// (shared with the brand-collection path, see lib/products.ts) is the one
+// conversion point that keeps this page compiling without changing its
+// behavior or bringing it into scope.
 
 export default async function SearchPage({
   searchParams,
@@ -10,9 +17,9 @@ export default async function SearchPage({
   const query = (q ?? "").toLowerCase().trim();
 
   const products = query
-    ? getAllProducts().filter(
-        (p) => p.title.toLowerCase().includes(query) || p.brand.toLowerCase().includes(query)
-      )
+    ? getAllProducts()
+        .filter((p) => p.title.toLowerCase().includes(query) || p.brand.toLowerCase().includes(query))
+        .map(toProductCardVM)
     : [];
 
   return (

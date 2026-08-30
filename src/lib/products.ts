@@ -2,6 +2,7 @@ import sneakers from "@/data/sneakers.json";
 import apparel from "@/data/apparel.json";
 import accessories from "@/data/accessories.json";
 import type { Product, ProductCategory } from "@/types/product";
+import type { ProductCardVM } from "@/types/view/product-card";
 import { getAllHomeFeaturedProducts } from "@/lib/home-featured";
 
 // Real product data extracted from the homepage's own asset folder takes
@@ -56,4 +57,23 @@ export function getProductBySlug(slug: string): Product | undefined {
 
 export function getFeaturedProducts(category: ProductCategory, count = 4): Product[] {
   return getProductsByCategory(category).slice(0, count);
+}
+
+// Adapts the mock catalog's Product shape into the same ProductCardVM the
+// real API integration produces, so ProductGrid/ProductCard (migrated to
+// ProductCardVM for the collection-page rebuild — see
+// PLANO-INTEGRACAO-ACCESSORIES.md §7) can keep rendering mock-backed pages
+// (search, brand collections) unchanged. Shared here rather than duplicated
+// per call site.
+export function toProductCardVM(product: Product): ProductCardVM {
+  const [primary, secondary] = product.images;
+  return {
+    id: product.slug,
+    slug: product.slug,
+    name: product.title,
+    brandName: product.brand,
+    imageUrl: primary ?? null,
+    secondaryImageUrl: secondary ?? null,
+    priceFrom: product.price,
+  };
 }

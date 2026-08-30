@@ -1,4 +1,4 @@
-import type { Product } from "@/types/product";
+import type { ProductCardVM } from "@/types/view/product-card";
 import ProductCard from "./ProductCard";
 
 export default function ProductGrid({
@@ -6,7 +6,7 @@ export default function ProductGrid({
   columns = 4,
   imageBg = "white",
 }: {
-  products: Product[];
+  products: ProductCardVM[];
   columns?: 1 | 3 | 4 | 6;
   imageBg?: "white" | "neutral";
 }) {
@@ -26,7 +26,7 @@ export default function ProductGrid({
   return (
     <div className={`grid ${baseCols} gap-x-4 gap-y-8 ${smCols} ${lgColsMap[columns]}`}>
       {products.map((product) => (
-        <ProductCard key={product.slug} product={product} imageBg={imageBg} />
+        <ProductCard key={product.id} product={product} imageBg={imageBg} />
       ))}
     </div>
   );

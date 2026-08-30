@@ -14,17 +14,12 @@ export interface NewArrivalsTabResult {
 
 function toProductCardVM(item: NewArrivalApi): ProductCardVM {
   const sortedImages = [...item.images].sort((a, b) => a.position - b.position);
-  const activeVariants = item.variants.filter((v) => v.isActive);
-  const activePrices = activeVariants.map((v) => Number(v.price));
-  // Quick-add has no size/variant picker on the real site — default to the
-  // first purchasable variant.
-  const quickAddVariant = activeVariants.find((v) => v.isAvailable) ?? null;
+  const activePrices = item.variants.filter((v) => v.isActive).map((v) => Number(v.price));
 
   return {
     id: item.id,
     slug: item.slug,
     name: item.name,
-    variantId: quickAddVariant?.id ?? null,
     // Gap confirmed in GUIA-INTEGRACAO-HOMEPAGE.md §8: this endpoint only
     // returns brandId, never an expanded `brand`. Omit rather than guess —
     // see PLANO-INTEGRACAO-HOMEPAGE.md §5.5 for why a client-side brandId
