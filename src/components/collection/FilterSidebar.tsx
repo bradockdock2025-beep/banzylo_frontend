@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import FilterGroup from "./FilterGroup";
 import type { CatalogFiltersVM, CatalogCategoryOption } from "@/types/view/catalog-filters";
 
@@ -225,8 +228,10 @@ function FilterCheckboxButton({
 
 // Dois <input type="range"> nativos sobrepostos na mesma trilha (thumbs
 // estilizados em globals.css) — cada ponto arrasta seu próprio limite. Os
-// dois campos abaixo só espelham o valor atual do slider, nunca são
-// digitáveis: a referência visual não mostra edição por teclado, só arrasto.
+// dois campos abaixo espelham o valor do slider mas também aceitam digitação
+// direta (limite identificado ao vivo: só dava pra ajustar arrastando) — o
+// texto digitado só é aplicado (clamp + onChange) no blur/Enter, pra não
+// interromper o usuário no meio da digitação de um número de vários dígitos.
 function PriceRangeSlider({
   min,
   max,
@@ -244,6 +249,37 @@ function PriceRangeSlider({
   const minPct = ((valueMin - min) / range) * 100;
   const maxPct = ((valueMax - min) / range) * 100;
 
+  const [minText, setMinText] = useState(String(valueMin));
+  const [maxText, setMaxText] = useState(String(valueMax));
+  // "Adjusting state when a prop changes" (react.dev) em vez de useEffect:
+  // ressincroniza o texto quando o valor muda por fora (arrasto do slider,
+  // ou clamp aplicado pelo outro campo) — nunca enquanto o campo em si está
+  // sendo digitado, já que digitar não toca valueMin/valueMax até o blur.
+  const [prevValueMin, setPrevValueMin] = useState(valueMin);
+  const [prevValueMax, setPrevValueMax] = useState(valueMax);
+  if (valueMin !== prevValueMin) {
+    setPrevValueMin(valueMin);
+    setMinText(String(valueMin));
+  }
+  if (valueMax !== prevValueMax) {
+    setPrevValueMax(valueMax);
+    setMaxText(String(valueMax));
+  }
+
+  function commitMin() {
+    const parsed = Number(minText);
+    const clamped = Number.isFinite(parsed) ? Math.min(Math.max(parsed, min), valueMax) : valueMin;
+    setMinText(String(clamped));
+    onChange(clamped, valueMax);
+  }
+
+  function commitMax() {
+    const parsed = Number(maxText);
+    const clamped = Number.isFinite(parsed) ? Math.max(Math.min(parsed, max), valueMin) : valueMax;
+    setMaxText(String(clamped));
+    onChange(valueMin, clamped);
+  }
+
   return (
     <div>
       <div className="relative h-3.5">
@@ -259,7 +295,7 @@ function PriceRangeSlider({
           max={max}
           value={valueMin}
           onChange={(e) => onChange(Math.min(Number(e.target.value), valueMax), valueMax)}
-          aria-label="Minimum price"
+          aria-label="Minimum price slider"
         />
         <input
           type="range"
@@ -268,13 +304,37 @@ function PriceRangeSlider({
           max={max}
           value={valueMax}
           onChange={(e) => onChange(valueMin, Math.max(Number(e.target.value), valueMin))}
-          aria-label="Maximum price"
+          aria-label="Maximum price slider"
         />
       </div>
       <div className="mt-4 flex items-center gap-2 text-sm text-neutral-700">
-        <span className="flex-1 border border-neutral-300 px-3 py-2 text-center">${valueMin.toFixed(0)}</span>
+        <div className="flex flex-1 items-center gap-1 border border-neutral-300 px-3 py-2">
+          <span className="text-neutral-400">$</span>
+          <input
+            type="text"
+            inputMode="numeric"
+            value={minText}
+            onChange={(e) => setMinText(e.target.value.replace(/[^0-9]/g, ""))}
+            onBlur={commitMin}
+            onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+            aria-label="Minimum price"
+            className="w-full min-w-0 bg-transparent text-center outline-none"
+          />
+        </div>
         <span className="text-neutral-400">to</span>
-        <span className="flex-1 border border-neutral-300 px-3 py-2 text-center">${valueMax.toFixed(0)}</span>
+        <div className="flex flex-1 items-center gap-1 border border-neutral-300 px-3 py-2">
+          <span className="text-neutral-400">$</span>
+          <input
+            type="text"
+            inputMode="numeric"
+            value={maxText}
+            onChange={(e) => setMaxText(e.target.value.replace(/[^0-9]/g, ""))}
+            onBlur={commitMax}
+            onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+            aria-label="Maximum price"
+            className="w-full min-w-0 bg-transparent text-center outline-none"
+          />
+        </div>
       </div>
     </div>
   );

@@ -120,16 +120,16 @@ export interface PaginatedResult {
   meta: { total: number; page: number; limit: number; totalPages: number };
 }
 
-// Paginação local — slice puro sobre o array já filtrado/ordenado. Ajusta a
-// página para o último valor válido se o filtro reduziu o total de páginas
-// (Correcao-da-Collection-Page.md §11).
+// Infinite load local — acumula até a página atual (slice(0, page*limit)),
+// não uma janela isolada, já que a grid nunca desmonta o que já carregou.
+// Ajusta a página para o último valor válido se o filtro reduziu o total de
+// páginas (Correcao-da-Collection-Page.md §11).
 export function paginateProducts(products: ProductCardVM[], page: number, limit: number): PaginatedResult {
   const total = products.length;
   const totalPages = Math.max(1, Math.ceil(total / limit));
   const safePage = Math.min(Math.max(1, page), totalPages);
-  const start = (safePage - 1) * limit;
   return {
-    items: products.slice(start, start + limit),
+    items: products.slice(0, safePage * limit),
     meta: { total, page: safePage, limit, totalPages },
   };
 }

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import CollectionHeader, { type BreadcrumbNode } from "./CollectionHeader";
 import CollectionControls, { type GridDensity } from "./CollectionControls";
 import FilterSidebar from "./FilterSidebar";
-import Pagination from "./Pagination";
+import InfiniteScrollSentinel from "./InfiniteScrollSentinel";
 import ProductGrid from "@/components/product/ProductGrid";
 import { useCatalogCache } from "@/components/providers/CatalogCacheProvider";
 import { getProducts, getCatalogFilters } from "@/lib/api/catalog";
@@ -235,8 +235,8 @@ export default function CollectionBody({
     setFilterState((prev) => ({ ...prev, sort, page: 1 }));
   }
 
-  function handlePageChange(page: number) {
-    setFilterState((prev) => ({ ...prev, page }));
+  function handleLoadMore() {
+    setFilterState((prev) => ({ ...prev, page: prev.page + 1 }));
   }
 
   function handleClearAll() {
@@ -327,7 +327,7 @@ export default function CollectionBody({
             ) : (
               <>
                 <ProductGrid products={displayed.items} columns={DENSITY_TO_COLUMNS[density]} imageBg="neutral" />
-                <Pagination page={displayed.meta.page} totalPages={displayed.meta.totalPages} onPageChange={handlePageChange} />
+                <InfiniteScrollSentinel hasMore={displayed.meta.page < displayed.meta.totalPages} onLoadMore={handleLoadMore} />
               </>
             )}
           </div>
