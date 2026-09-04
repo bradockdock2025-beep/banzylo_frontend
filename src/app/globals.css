@@ -62,6 +62,44 @@
   animation: marquee 24s linear infinite;
 }
 
+/* Dual-thumb price slider (FilterSidebar "Price" group): two native
+   <input type="range"> stacked on the same track. The input itself stays
+   invisible/non-interactive (pointer-events: none) so only its thumb can be
+   grabbed — otherwise whichever input is on top would swallow every click,
+   including drags meant for the thumb underneath. */
+input[type="range"].price-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  pointer-events: none;
+}
+input[type="range"].price-thumb::-webkit-slider-runnable-track {
+  -webkit-appearance: none;
+  background: transparent;
+}
+input[type="range"].price-thumb::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  pointer-events: auto;
+  height: 14px;
+  width: 14px;
+  border-radius: 9999px;
+  background: #000;
+  cursor: pointer;
+}
+input[type="range"].price-thumb::-moz-range-track {
+  background: transparent;
+}
+input[type="range"].price-thumb::-moz-range-thumb {
+  pointer-events: auto;
+  height: 14px;
+  width: 14px;
+  border: none;
+  border-radius: 9999px;
+  background: #000;
+  cursor: pointer;
+}
+
 :root {
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);

@@ -227,6 +227,10 @@ export default function CollectionBody({
     });
   }
 
+  function handlePriceChange(min: number, max: number) {
+    setFilterState((prev) => ({ ...prev, minPrice: min, maxPrice: max, page: 1 }));
+  }
+
   function handleSortChange(sort: CatalogSort) {
     setFilterState((prev) => ({ ...prev, sort, page: 1 }));
   }
@@ -302,8 +306,11 @@ export default function CollectionBody({
             activeCategoryId={dataset.categoryId}
             selectedBrands={filterState.brand}
             selectedFacets={filterState.facets}
+            selectedMinPrice={filterState.minPrice}
+            selectedMaxPrice={filterState.maxPrice}
             onToggleBrand={handleToggleBrand}
             onToggleFacet={handleToggleFacet}
+            onPriceChange={handlePriceChange}
             onSelectSubcategory={handleSelectSubcategory}
           />
           <div className="flex-1">

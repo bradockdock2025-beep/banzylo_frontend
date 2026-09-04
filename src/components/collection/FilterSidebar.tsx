@@ -1,6 +1,13 @@
 import FilterGroup from "./FilterGroup";
 import type { CatalogFiltersVM, CatalogCategoryOption } from "@/types/view/catalog-filters";
 
+// Long option lists (Brand, Color, the size facets, deep subcategory trees)
+// get a capped height with vertical scroll but NO visible scrollbar — same
+// treatment as the PDP product rails. `max-h` only kicks in when the list is
+// actually long; short lists render in full.
+const SCROLL_LIST =
+  "max-h-64 overflow-y-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden";
+
 // Correcao-da-Collection-Page.md: brand/facet/category são todos "filtros"
 // no exemplo do próprio guia (§21: "Category: Headwear" + "Color: Blue"
 // lado a lado, nenhum dos dois pode derrubar a página) — nenhum deles usa
@@ -13,8 +20,11 @@ export default function FilterSidebar({
   activeCategoryId,
   selectedBrands,
   selectedFacets,
+  selectedMinPrice,
+  selectedMaxPrice,
   onToggleBrand,
   onToggleFacet,
+  onPriceChange,
   onSelectSubcategory,
 }: {
   filters: CatalogFiltersVM;
@@ -25,8 +35,12 @@ export default function FilterSidebar({
   selectedBrands: string[];
   /** "key:value" tokens, mesmo formato interno do state em catalog-local.ts. */
   selectedFacets: string[];
+  /** undefined = nenhum filtro aplicado ainda → slider cobre o range inteiro (filters.priceMin/Max). */
+  selectedMinPrice?: number;
+  selectedMaxPrice?: number;
   onToggleBrand: (value: string) => void;
   onToggleFacet: (key: string, value: string) => void;
+  onPriceChange: (min: number, max: number) => void;
   onSelectSubcategory: (subcategory: CatalogCategoryOption) => void;
 }) {
   const selectedBrandSet = new Set(selectedBrands);
@@ -36,7 +50,7 @@ export default function FilterSidebar({
     <aside className="w-full lg:w-56 lg:shrink-0">
       {categoryOptions.length > 0 && (
         <FilterGroup label="Category" defaultOpen>
-          <ul className="space-y-2 text-sm text-neutral-700">
+          <ul className={`${SCROLL_LIST} space-y-2 text-sm text-neutral-700`}>
             {categoryOptions.map((sub) => {
               const isActive = sub.id === activeCategoryId;
               return (
@@ -61,9 +75,12 @@ export default function FilterSidebar({
         </FilterGroup>
       )}
 
-      <FilterGroup label="Brand">
+      {/* Open by default when a brand is already applied — e.g. arriving from
+          a home "View All" (/collections/apparel?brand=<slug>) so the active
+          filter is visible, not hidden in a collapsed group. */}
+      <FilterGroup label="Brand" defaultOpen={selectedBrands.length > 0}>
         {filters.brands.length > 0 ? (
-          <ul className="space-y-2 text-sm text-neutral-700">
+          <ul className={`${SCROLL_LIST} space-y-2 text-sm text-neutral-700`}>
             {filters.brands.map((brand) => (
               <li key={brand.value}>
                 <FilterCheckboxButton
@@ -89,7 +106,7 @@ export default function FilterSidebar({
       {filters.facets.map((facet) => (
         <FilterGroup key={facet.key} label={facet.name}>
           {facet.inputType === "swatch" ? (
-            <div className="flex flex-wrap gap-3">
+            <div className={`${SCROLL_LIST} flex flex-wrap gap-3`}>
               {facet.values.map((v) => {
                 const checked = selectedFacetSet.has(`${facet.key}:${v.value}`);
                 return (
@@ -123,7 +140,7 @@ export default function FilterSidebar({
                flicker as counts recompute while the user filters. A value
                that's already selected stays clickable even at count:0, so a
                filter is never impossible to undo. */
-            <ul className="max-h-64 space-y-2 overflow-y-auto text-sm text-neutral-700">
+            <ul className={`${SCROLL_LIST} space-y-2 text-sm text-neutral-700`}>
               {facet.values.map((v) => {
                 const checked = selectedFacetSet.has(`${facet.key}:${v.value}`);
                 return (
@@ -157,9 +174,13 @@ export default function FilterSidebar({
 
       <FilterGroup label="Price">
         {filters.priceMax > 0 ? (
-          <p className="text-sm text-neutral-700">
-            ${filters.priceMin.toFixed(0)} — ${filters.priceMax.toFixed(0)}
-          </p>
+          <PriceRangeSlider
+            min={filters.priceMin}
+            max={filters.priceMax}
+            valueMin={selectedMinPrice ?? filters.priceMin}
+            valueMax={selectedMaxPrice ?? filters.priceMax}
+            onChange={onPriceChange}
+          />
         ) : (
           <p className="text-sm text-neutral-400">No products</p>
         )}
@@ -199,6 +220,63 @@ function FilterCheckboxButton({
       </span>
       <span className="text-neutral-400">{count}</span>
     </button>
+  );
+}
+
+// Dois <input type="range"> nativos sobrepostos na mesma trilha (thumbs
+// estilizados em globals.css) — cada ponto arrasta seu próprio limite. Os
+// dois campos abaixo só espelham o valor atual do slider, nunca são
+// digitáveis: a referência visual não mostra edição por teclado, só arrasto.
+function PriceRangeSlider({
+  min,
+  max,
+  valueMin,
+  valueMax,
+  onChange,
+}: {
+  min: number;
+  max: number;
+  valueMin: number;
+  valueMax: number;
+  onChange: (min: number, max: number) => void;
+}) {
+  const range = Math.max(max - min, 1);
+  const minPct = ((valueMin - min) / range) * 100;
+  const maxPct = ((valueMax - min) / range) * 100;
+
+  return (
+    <div>
+      <div className="relative h-3.5">
+        <div className="absolute inset-x-0 top-1/2 h-0.5 -translate-y-1/2 bg-neutral-200" />
+        <div
+          className="absolute top-1/2 h-0.5 -translate-y-1/2 bg-black"
+          style={{ left: `${minPct}%`, right: `${100 - maxPct}%` }}
+        />
+        <input
+          type="range"
+          className="price-thumb absolute inset-x-0 top-0 w-full"
+          min={min}
+          max={max}
+          value={valueMin}
+          onChange={(e) => onChange(Math.min(Number(e.target.value), valueMax), valueMax)}
+          aria-label="Minimum price"
+        />
+        <input
+          type="range"
+          className="price-thumb absolute inset-x-0 top-0 w-full"
+          min={min}
+          max={max}
+          value={valueMax}
+          onChange={(e) => onChange(valueMin, Math.max(Number(e.target.value), valueMin))}
+          aria-label="Maximum price"
+        />
+      </div>
+      <div className="mt-4 flex items-center gap-2 text-sm text-neutral-700">
+        <span className="flex-1 border border-neutral-300 px-3 py-2 text-center">${valueMin.toFixed(0)}</span>
+        <span className="text-neutral-400">to</span>
+        <span className="flex-1 border border-neutral-300 px-3 py-2 text-center">${valueMax.toFixed(0)}</span>
+      </div>
+    </div>
   );
 }
 

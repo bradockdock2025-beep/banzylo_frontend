@@ -5,7 +5,6 @@ import type {
   CatalogFiltersResponseApi,
   ProductsResponseApi,
 } from "@/types/api/catalog";
-import type { SearchResponseApi } from "@/types/api/search";
 import type { ProductCardVM } from "@/types/view/product-card";
 import type { CatalogFiltersVM } from "@/types/view/catalog-filters";
 
@@ -14,87 +13,29 @@ export interface ProductListResult {
   meta: { total: number; page: number; limit: number; totalPages: number };
 }
 
-interface SlugEntry {
-  slug: string;
-  secondaryImageUrl: string | null;
-}
-
-const SEARCH_PAGE_LIMIT = 48; // GET /search caps `limit` at 48
-const SEARCH_MAX_PAGES = 5; // safety ceiling (~240 items) for slug enrichment
-
-// GET /products (the grid) never returns a product `slug`, so its cards can't
-// link to the PDP. GET /search — same filters, same result set — DOES return
-// `slug` (but not the expanded brand). So we fetch both and merge by `id`:
-// slug + secondary image from /search, everything else from /products. A
-// /search failure just degrades to non-linked cards (the old behavior).
-async function fetchSlugMap(params: CatalogQueryParams): Promise<Map<string, SlugEntry>> {
-  const map = new Map<string, SlugEntry>();
-  if (!params.categoryId && params.brand.length === 0) return map; // /search needs a filter
-
-  const query = (page: number) => {
-    const qs = new URLSearchParams();
-    if (params.categoryId) qs.set("categoryId", params.categoryId);
-    if (params.brand.length > 0) qs.set("brand", params.brand.join(","));
-    if (params.facets.length > 0) qs.set("facets", params.facets.join(","));
-    if (params.minPrice !== undefined) qs.set("minPrice", String(params.minPrice));
-    if (params.maxPrice !== undefined) qs.set("maxPrice", String(params.maxPrice));
-    if (params.inStock !== undefined) qs.set("inStock", String(params.inStock));
-    qs.set("page", String(page));
-    qs.set("limit", String(SEARCH_PAGE_LIMIT));
-    return qs.toString();
-  };
-
-  const absorb = (res: SearchResponseApi) => {
-    for (const item of res.data) {
-      const images = [...item.images].sort((a, b) => a.position - b.position);
-      map.set(item.id, { slug: item.slug, secondaryImageUrl: images[1]?.url ?? null });
-    }
-  };
-
-  const first = await apiFetch<SearchResponseApi>(`/search?${query(1)}`, {
-    revalidate: REVALIDATE.catalogProducts,
-  });
-  absorb(first);
-
-  const wantedPages = Math.ceil(
-    Math.min(params.limit || SEARCH_PAGE_LIMIT, SEARCH_MAX_PAGES * SEARCH_PAGE_LIMIT) / SEARCH_PAGE_LIMIT
-  );
-  const pages = Math.min(first.meta.totalPages ?? 1, wantedPages, SEARCH_MAX_PAGES);
-  if (pages > 1) {
-    const rest = await Promise.all(
-      Array.from({ length: pages - 1 }, (_, i) =>
-        apiFetch<SearchResponseApi>(`/search?${query(i + 2)}`, { revalidate: REVALIDATE.catalogProducts })
-      )
-    );
-    rest.forEach(absorb);
-  }
-  return map;
-}
-
 // GET /products — the grid. Same params object also drives getCatalogFilters
 // (see below), so the two are structurally impossible to call with different
 // filters by accident (PLANO-INTEGRACAO-ACCESSORIES.md §2/§4).
+//
+// Since 2026-09-03 the item carries `slug` (RELATORIO-BACKEND-PERFORMANCE P1),
+// so cards link straight to the PDP — the old parallel GET /search merge that
+// existed only to recover slugs was removed. The grid item has a single
+// `image` and no `images[]`, so there is no hover/secondary image here.
 export async function getProducts(params: CatalogQueryParams): Promise<ProductListResult> {
   try {
-    const [res, slugMap] = await Promise.all([
-      apiFetch<ProductsResponseApi>(`/products?${buildCatalogQueryString(params)}`, {
-        revalidate: REVALIDATE.catalogProducts,
-      }),
-      fetchSlugMap(params).catch(() => new Map<string, SlugEntry>()),
-    ]);
+    const res = await apiFetch<ProductsResponseApi>(
+      `/products?${buildCatalogQueryString(params)}`,
+      { revalidate: REVALIDATE.catalogProducts }
+    );
 
-    const items: ProductCardVM[] = res.data.map((item) => {
-      const extra = slugMap.get(item.id);
-      return {
-        id: item.id,
-        slug: extra?.slug ?? null,
-        name: item.name,
-        brandName: item.brand?.name ?? null,
-        imageUrl: item.image,
-        secondaryImageUrl: extra?.secondaryImageUrl ?? null,
-        priceFrom: item.priceFrom,
-      };
-    });
+    const items: ProductCardVM[] = res.data.map((item) => ({
+      id: item.id,
+      slug: item.slug,
+      name: item.name,
+      brandName: item.brand?.name ?? null,
+      imageUrl: item.image,
+      priceFrom: item.priceFrom,
+    }));
 
     return { items, meta: res.meta };
   } catch (err) {

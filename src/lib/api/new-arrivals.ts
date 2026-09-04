@@ -32,10 +32,15 @@ function toProductCardVM(item: NewArrivalApi): ProductCardVM {
   };
 }
 
+// The home section renders these as a horizontal slider (NewArrivals.tsx), so
+// it wants more than a single screen's worth. 18 is well within the endpoint's
+// cap of 48 and keeps the home payload reasonable.
+const NEW_ARRIVALS_LIMIT = 18;
+
 async function fetchTab(categoryId: string): Promise<NewArrivalsTabResult> {
   try {
     const res = await apiFetch<NewArrivalsResponseApi>(
-      `/products/new-arrivals?categoryId=${categoryId}&limit=6`,
+      `/products/new-arrivals?categoryId=${categoryId}&limit=${NEW_ARRIVALS_LIMIT}`,
       { revalidate: REVALIDATE.newArrivals }
     );
     return { products: res.data.map(toProductCardVM), visible: res.meta.visible };

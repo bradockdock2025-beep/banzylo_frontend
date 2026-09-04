@@ -6,6 +6,10 @@
 export interface ProductListItemApi {
   id: string;
   name: string;
+  /** Added by the backend 2026-09-03 (RELATORIO-BACKEND-PERFORMANCE P1) — the
+   * grid endpoint now carries the slug, so cards link straight to the PDP
+   * without a second lookup. */
+  slug: string;
   image: string | null;
   brand: { name: string; logoUrl: string | null } | null;
   priceFrom: number;

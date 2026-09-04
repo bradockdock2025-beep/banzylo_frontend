@@ -40,7 +40,10 @@ export default async function Home() {
         <BrandSection
           key={section.slug}
           heading={section.heading}
-          viewAllHref={`/collections/${section.slug}`}
+          // "View All" lands on the Apparel collection pre-filtered by this
+          // brand — no dedicated brand page. The collection page reads
+          // ?brand= from the URL and applies it as the initial filter.
+          viewAllHref={`/collections/apparel?brand=${section.slug}`}
           products={brandCarousels[section.slug] ?? []}
         />
       ))}

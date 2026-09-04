@@ -3,7 +3,7 @@
 import { useState } from "react";
 import type { ProductCardVM } from "@/types/view/product-card";
 import type { HomeCategoryKey } from "@/types/view/home-category";
-import HomeProductGrid from "@/components/product/HomeProductGrid";
+import HomeProductCard from "@/components/product/HomeProductCard";
 
 export interface NewArrivalsTab {
   key: HomeCategoryKey;
@@ -45,8 +45,14 @@ export default function NewArrivals({ tabs }: { tabs: NewArrivalsTab[] }) {
         </div>
       )}
 
-      <div className="mt-10">
-        <HomeProductGrid products={activeTab.products} columns={6} />
+      {/* Horizontal slider — shows ~6 cards, scrolls to the rest. Scrollbar
+          hidden (same treatment as the PDP rails / filter lists). */}
+      <div className="mt-10 flex gap-4 overflow-x-auto pb-2 sm:gap-6 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {activeTab.products.map((product) => (
+          <div key={product.id} className="w-40 shrink-0 sm:w-52">
+            <HomeProductCard product={product} />
+          </div>
+        ))}
       </div>
     </section>
   );

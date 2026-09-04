@@ -1,13 +1,10 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { getCategories, findCategoryBySlug, flattenCategoryTree } from "@/lib/api/categories";
-import { getAllBrandHandles } from "@/lib/collections";
 import { BRANDS } from "@/data/brands";
 import { getProducts, getCatalogFilters } from "@/lib/api/catalog";
-import { getBrandProducts } from "@/lib/api/brand-carousels";
-import ProductGrid from "@/components/product/ProductGrid";
 import type { RawSearchParams } from "@/lib/catalog-query";
 import { parseLocalFilterState, needsRemoteData, deriveLocalProducts } from "@/lib/catalog-local";
-import CollectionHeader, { type BreadcrumbNode } from "@/components/collection/CollectionHeader";
+import { type BreadcrumbNode } from "@/components/collection/CollectionHeader";
 import CollectionBody from "@/components/collection/CollectionBody";
 
 // Correcao-da-Collection-Page.md: catálogo inteiro é pequeno (confirmado ao
@@ -21,8 +18,10 @@ const FULL_CATEGORY_LIMIT = 200;
 
 export async function generateStaticParams() {
   const tree = await getCategories();
-  const categoryHandles = flattenCategoryTree(tree).map((c) => c.slug);
-  return [...categoryHandles, ...getAllBrandHandles()].map((handle) => ({ handle }));
+  // Only real category slugs are prebuilt. A brand slug (/collections/jordan)
+  // is not a page — it redirects to the matching category collection filtered
+  // by that brand (see below), so it stays dynamic.
+  return flattenCategoryTree(tree).map((c) => ({ handle: c.slug }));
 }
 
 export default async function CollectionPage({
@@ -126,24 +125,16 @@ export default async function CollectionPage({
     );
   }
 
-  // Not a category — try it as a brand slug. Brand collections are the home
-  // "View All" targets (Chrome Hearts, Enfants Riches Déprimés, …) and now
-  // pull the real catalog via GET /search?brand=<slug> (the old mock path
-  // under-counted, e.g. accented brands slugified wrong -> 1 result).
+  // Not a category — treat it as a brand slug. There is NO dedicated brand
+  // page: /collections/<brand> redirects to the matching category collection
+  // pre-filtered by that brand. This is the target of the home "View All"
+  // buttons (Home → View All → Apparel filtered by that brand), and also
+  // keeps any old/bookmarked /collections/<brand> link working.
   const brand = BRANDS.find((b) => b.slug === handle);
   if (!brand) {
     notFound();
   }
 
-  const brandProducts = await getBrandProducts(brand.slug, brand.name);
-
-  return (
-    <div>
-      <CollectionHeader title={brand.name} categoryBadge={null} />
-      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
-        <p className="mb-6 text-xs text-neutral-500">{brandProducts.length} products</p>
-        <ProductGrid products={brandProducts} columns={4} imageBg="neutral" />
-      </div>
-    </div>
-  );
+  const category = brand.group === "footwear" ? "sneakers" : "apparel";
+  redirect(`/collections/${category}?brand=${encodeURIComponent(brand.slug)}`);
 }
