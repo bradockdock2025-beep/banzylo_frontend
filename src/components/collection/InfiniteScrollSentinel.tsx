@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { Spinner } from "@/components/ui/spinner";
 
 // Substitui a paginação numerada por completo: nenhum clique, a grid carrega
 // o próximo lote sozinha. A sentinela fica logo abaixo da grid — o
@@ -37,15 +38,7 @@ export default function InfiniteScrollSentinel({
 
   return (
     <div ref={ref} className="flex justify-center py-12">
-      <svg
-        className="h-4 w-4 animate-spin text-neutral-400"
-        viewBox="0 0 24 24"
-        fill="none"
-        role="status"
-        aria-label="Loading more products"
-      >
-        <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeDasharray="14 42" />
-      </svg>
+      <Spinner />
     </div>
   );
 }

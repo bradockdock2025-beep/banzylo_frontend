@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Minus, Plus, X } from "lucide-react";
 import { useCart } from "@/components/providers/CartProvider";
@@ -16,7 +16,6 @@ export default function CartDrawer() {
     cart,
     count,
     isOpen,
-    isBusy,
     error,
     closeDrawer,
     setItemQuantity,
@@ -36,6 +35,24 @@ export default function CartDrawer() {
   }, [isOpen, closeDrawer]);
 
   const items = cart?.items ?? [];
+
+  // CartProvider applies quantity/remove optimistically (updates this line
+  // immediately, reconciles or rolls back in the background — the ~2-3s
+  // backend round-trip, see RELATORIO-BACKEND-PERFORMANCE-RESPOSTA.md, is no
+  // longer something the shopper has to watch). `pendingVariantId` only
+  // guards against double-submitting the SAME line while its own request is
+  // still in flight — other lines stay fully interactive throughout.
+  const [pendingVariantId, setPendingVariantId] = useState<string | null>(null);
+
+  function handleQuantity(variantId: string, quantity: number) {
+    setPendingVariantId(variantId);
+    setItemQuantity(variantId, quantity).finally(() => setPendingVariantId(null));
+  }
+
+  function handleRemove(variantId: string) {
+    setPendingVariantId(variantId);
+    removeItem(variantId).finally(() => setPendingVariantId(null));
+  }
 
   return (
     <div
@@ -84,9 +101,9 @@ export default function CartDrawer() {
                 <CartLine
                   key={line.variantId}
                   line={line}
-                  disabled={isBusy}
-                  onQuantity={(q) => setItemQuantity(line.variantId, q)}
-                  onRemove={() => removeItem(line.variantId)}
+                  disabled={pendingVariantId === line.variantId}
+                  onQuantity={(q) => handleQuantity(line.variantId, q)}
+                  onRemove={() => handleRemove(line.variantId)}
                   onNavigate={closeDrawer}
                 />
               ))}
@@ -130,6 +147,7 @@ function CartLine({
   onNavigate,
 }: {
   line: CartLineVM;
+  /** This line's own mutation is in flight — guards against double-submitting it. */
   disabled: boolean;
   onQuantity: (quantity: number) => void;
   onRemove: () => void;

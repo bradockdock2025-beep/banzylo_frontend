@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Minus, Plus, Store } from "lucide-react";
+import { Minus, Plus } from "lucide-react";
 import type { ProductDetailVM } from "@/types/view/product-detail";
 import { LOCATIONS } from "@/data/locations";
 import { Button } from "@/components/ui/button";
@@ -28,7 +28,9 @@ const PICKUP_STORE = LOCATIONS.find((l) => l.name.includes("World Center")) ?? L
 
 const FIELD_LABEL = "block text-xs font-semibold uppercase tracking-wide text-neutral-500";
 // Minimalist: square corners, thin neutral border, compact height.
-const FIELD_CONTROL = "mt-2 h-10 w-full rounded-none border-neutral-300 text-sm";
+// Size/Condition triggers only hold a short word ("XL", "New") — a fixed
+// compact width instead of stretching full-width.
+const SELECT_CONTROL = "mt-2 h-10 w-28 rounded-none border-neutral-300 text-sm";
 
 export default function ProductPurchasePanel({ product }: { product: ProductDetailVM }) {
   const { variants } = product;
@@ -73,30 +75,34 @@ export default function ProductPurchasePanel({ product }: { product: ProductDeta
       </p>
 
       {hasSizes && (
-        <div className="mt-8">
-          <label className={FIELD_LABEL}>Size:</label>
-          {/* `items` maps variantId -> label so the trigger shows "EU 42",
-              not the raw id (Base UI Select resolves the value against it). */}
-          <Select
-            value={variantId}
-            onValueChange={(v) => setVariantId(v ?? "")}
-            items={variants.map((v) => ({ value: v.id, label: v.sizeLabel || "One Size" }))}
-          >
-            <SelectTrigger className={FIELD_CONTROL}>
-              <SelectValue placeholder="Select size" />
-            </SelectTrigger>
-            <SelectContent>
-              {variants.map((v) => {
-                const soldOut = !v.available || v.purchaseMode !== "normal";
-                return (
-                  <SelectItem key={v.id} value={v.id} disabled={soldOut}>
-                    {v.sizeLabel || "One Size"}
-                    {soldOut ? " — Sold out" : ""}
-                  </SelectItem>
-                );
-              })}
-            </SelectContent>
-          </Select>
+        <div className="mt-8 flex gap-4">
+          <div>
+            <label className={FIELD_LABEL}>Size:</label>
+            {/* `items` maps variantId -> label so the trigger shows "EU 42",
+                not the raw id (Base UI Select resolves the value against it). */}
+            <Select
+              value={variantId}
+              onValueChange={(v) => setVariantId(v ?? "")}
+              items={variants.map((v) => ({ value: v.id, label: v.sizeLabel || "One Size" }))}
+            >
+              <SelectTrigger className={SELECT_CONTROL}>
+                <SelectValue placeholder="Select size" />
+              </SelectTrigger>
+              <SelectContent>
+                {variants.map((v) => {
+                  const soldOut = !v.available || v.purchaseMode !== "normal";
+                  return (
+                    <SelectItem key={v.id} value={v.id} disabled={soldOut}>
+                      {v.sizeLabel || "One Size"}
+                      {soldOut ? " — Sold out" : ""}
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <ConditionSelect conditions={conditions} value={condition} onChange={setCondition} />
         </div>
       )}
 
@@ -139,40 +145,11 @@ export default function ProductPurchasePanel({ product }: { product: ProductDeta
         </div>
       </div>
 
-      <div className="mt-6">
-        <label className={FIELD_LABEL}>Condition:</label>
-        <Select value={condition} onValueChange={(v) => setCondition(v ?? conditions[0])}>
-          <SelectTrigger className={FIELD_CONTROL}>
-            <SelectValue placeholder="Select condition" />
-          </SelectTrigger>
-          <SelectContent>
-            {conditions.map((c) => (
-              <SelectItem key={c} value={c}>
-                {c}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="mt-8">
-        <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">
-          <Store className="h-4 w-4" />
-          Availability
-        </p>
-        <div className="mt-3 rounded-sm border border-neutral-200 p-4 text-sm">
-          <p className="text-neutral-900">
-            HYP - {PICKUP_STORE.name} -{" "}
-            {product.inStock ? (
-              <span className="font-medium text-green-600">In Stock</span>
-            ) : (
-              <span className="font-medium text-neutral-400">Out of Stock</span>
-            )}
-          </p>
-          <p className="mt-2 text-neutral-500">{PICKUP_STORE.address.join(" ")}</p>
-          <p className="mt-1 text-neutral-500">{PICKUP_STORE.phone}</p>
+      {!hasSizes && (
+        <div className="mt-6 flex gap-4">
+          <ConditionSelect conditions={conditions} value={condition} onChange={setCondition} />
         </div>
-      </div>
+      )}
 
       <button
         type="button"
@@ -209,6 +186,34 @@ export default function ProductPurchasePanel({ product }: { product: ProductDeta
       </div>
 
       <ProductInfoAccordions />
+    </div>
+  );
+}
+
+function ConditionSelect({
+  conditions,
+  value,
+  onChange,
+}: {
+  conditions: string[];
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div>
+      <label className={FIELD_LABEL}>Condition:</label>
+      <Select value={value} onValueChange={(v) => onChange(v ?? conditions[0])}>
+        <SelectTrigger className={SELECT_CONTROL}>
+          <SelectValue placeholder="Select condition" />
+        </SelectTrigger>
+        <SelectContent>
+          {conditions.map((c) => (
+            <SelectItem key={c} value={c}>
+              {c}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </div>
   );
 }

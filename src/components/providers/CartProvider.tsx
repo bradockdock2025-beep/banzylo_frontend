@@ -10,7 +10,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import type { CartVM } from "@/types/view/cart";
+import type { CartVM, CartLineVM } from "@/types/view/cart";
 import {
   getCart,
   addCartItem,
@@ -57,12 +57,47 @@ function messageFor(err: unknown): string {
   return "Something went wrong. Please try again.";
 }
 
+function recomputeCart(items: CartLineVM[]): CartVM {
+  return {
+    items,
+    subtotal: items.reduce((sum, it) => sum + it.lineTotal, 0),
+    count: items.reduce((sum, it) => sum + it.quantity, 0),
+  };
+}
+
+// Puts one line back the way it was — applied against whatever the cart
+// looks like *at rollback time* (never a stale snapshot), since a sibling
+// line's request may have legitimately resolved in the meantime and a
+// wholesale restore would clobber that unrelated change too.
+function revertLine(
+  cart: CartVM | null,
+  variantId: string,
+  previousLine: CartLineVM | undefined
+): CartVM | null {
+  if (!cart) return cart;
+  const withoutLine = cart.items.filter((it) => it.variantId !== variantId);
+  return recomputeCart(previousLine ? [...withoutLine, previousLine] : withoutLine);
+}
+
 export function CartProvider({ children }: { children: ReactNode }) {
   const tokenRef = useRef("");
   const [cart, setCart] = useState<CartVM | null>(null);
+  const cartRef = useRef<CartVM | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [isBusy, setIsBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // setCart wrapper that keeps cartRef in sync so the optimistic mutations
+  // below (setItemQuantity/removeItem) can read the *current* cart from a
+  // stable useCallback without depending on `cart` (which would defeat their
+  // rollback-against-latest-state logic — see revertLine above).
+  const updateCart = useCallback((next: CartVM | null | ((prev: CartVM | null) => CartVM | null)) => {
+    setCart((prev) => {
+      const resolved = typeof next === "function" ? (next as (p: CartVM | null) => CartVM | null)(prev) : next;
+      cartRef.current = resolved;
+      return resolved;
+    });
+  }, []);
 
   // Hydrate once — only when a token already exists. First-time visitors have
   // no cart yet (it's created lazily by the first add), so skip the call.
@@ -74,30 +109,36 @@ export function CartProvider({ children }: { children: ReactNode }) {
       .then(({ cart: fresh, token }) => {
         tokenRef.current = token;
         writeCartToken(token);
-        setCart(fresh);
+        updateCart(fresh);
       })
       .catch(() => {
         // token expired / rejected — drop it so the next add starts clean
         clearStoredCartToken();
         tokenRef.current = "";
       });
-  }, []);
+  }, [updateCart]);
 
-  const run = useCallback(async (op: (token: string) => Promise<CartResult>) => {
-    setIsBusy(true);
-    setError(null);
-    try {
-      const { cart: fresh, token } = await op(tokenRef.current);
-      tokenRef.current = token;
-      writeCartToken(token);
-      setCart(fresh);
-    } catch (err) {
-      setError(messageFor(err));
-      throw err;
-    } finally {
-      setIsBusy(false);
-    }
-  }, []);
+  // Pessimistic path — still used by addItem/emptyCart, both one-off actions
+  // with their own explicit "in progress" affordance (the PDP's "Adding…"
+  // button state), unlike the quantity stepper this doesn't cover anymore.
+  const run = useCallback(
+    async (op: (token: string) => Promise<CartResult>) => {
+      setIsBusy(true);
+      setError(null);
+      try {
+        const { cart: fresh, token } = await op(tokenRef.current);
+        tokenRef.current = token;
+        writeCartToken(token);
+        updateCart(fresh);
+      } catch (err) {
+        setError(messageFor(err));
+        throw err;
+      } finally {
+        setIsBusy(false);
+      }
+    },
+    [updateCart]
+  );
 
   const addItem = useCallback(
     async (variantId: string, quantity = 1) => {
@@ -110,14 +151,59 @@ export function CartProvider({ children }: { children: ReactNode }) {
     [run]
   );
 
+  // Optimistic: the stepper reflects the new quantity the instant it's
+  // clicked — the ~2-3s backend round-trip (see
+  // RELATORIO-BACKEND-PERFORMANCE-RESPOSTA.md) happens in the background and
+  // only reconciles or rolls back this one line, never the whole cart.
   const setItemQuantity = useCallback(
-    (variantId: string, quantity: number) => run((t) => updateCartItem(t, variantId, Math.max(0, quantity))),
-    [run]
+    async (variantId: string, quantity: number) => {
+      const clamped = Math.max(0, quantity);
+      const current = cartRef.current;
+      if (!current) return;
+      const previousLine = current.items.find((it) => it.variantId === variantId);
+
+      setError(null);
+      const optimisticItems =
+        clamped === 0
+          ? current.items.filter((it) => it.variantId !== variantId)
+          : current.items.map((it) =>
+              it.variantId === variantId ? { ...it, quantity: clamped, lineTotal: it.unitPrice * clamped } : it
+            );
+      updateCart(recomputeCart(optimisticItems));
+
+      try {
+        const { cart: fresh, token } = await updateCartItem(tokenRef.current, variantId, clamped);
+        tokenRef.current = token;
+        writeCartToken(token);
+        updateCart(fresh); // reconciles with server truth (stock/price may have shifted)
+      } catch (err) {
+        updateCart((prev) => revertLine(prev, variantId, previousLine));
+        setError(messageFor(err));
+      }
+    },
+    [updateCart]
   );
 
   const removeItem = useCallback(
-    (variantId: string) => run((t) => removeCartItem(t, variantId)),
-    [run]
+    async (variantId: string) => {
+      const current = cartRef.current;
+      if (!current) return;
+      const previousLine = current.items.find((it) => it.variantId === variantId);
+
+      setError(null);
+      updateCart(recomputeCart(current.items.filter((it) => it.variantId !== variantId)));
+
+      try {
+        const { cart: fresh, token } = await removeCartItem(tokenRef.current, variantId);
+        tokenRef.current = token;
+        writeCartToken(token);
+        updateCart(fresh);
+      } catch (err) {
+        updateCart((prev) => revertLine(prev, variantId, previousLine));
+        setError(messageFor(err));
+      }
+    },
+    [updateCart]
   );
 
   const emptyCart = useCallback(() => run((t) => clearCart(t)), [run]);
