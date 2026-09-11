@@ -20,7 +20,8 @@ export default function Footer() {
     <footer className="bg-black text-white">
       <div className="mx-auto grid max-w-7xl grid-cols-1 gap-10 px-4 py-14 sm:px-6 sm:grid-cols-2 md:grid-cols-4">
         <div>
-          <Image src="/brand/hyp-logo.png" alt="HYP" width={90} height={72} className="h-14 w-auto" />
+          {/* Mark is black-on-transparent — inverted to white so it reads on this footer's black background. */}
+          <Image src="/brand/logotipobz.png" alt="HYP" width={90} height={72} className="h-14 w-auto invert" />
           <div className="mt-5 flex gap-4">
             <a href="https://instagram.com/hypmiami" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
               <InstagramIcon />

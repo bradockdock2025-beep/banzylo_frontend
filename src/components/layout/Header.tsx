@@ -66,7 +66,7 @@ export default function Header({
 
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6">
         <Link href="/" className="flex items-center gap-2">
-          <Image src="/brand/hyp-logo-alt.png" alt="HYP" width={70} height={56} className="h-12 w-auto" priority />
+          <Image src="/brand/logotipobz.png" alt="HYP" width={70} height={56} className="h-12 w-auto" priority />
         </Link>
 
         <nav className="hidden items-center gap-7 text-xs font-semibold uppercase tracking-wide md:flex">
