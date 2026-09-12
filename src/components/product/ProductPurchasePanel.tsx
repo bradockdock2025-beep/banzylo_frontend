@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import { Minus, Plus } from "lucide-react";
 import type { ProductDetailVM } from "@/types/view/product-detail";
-import { LOCATIONS } from "@/data/locations";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -22,9 +21,9 @@ import ProductInfoAccordions from "./ProductInfoAccordions";
 // is not integrated yet (see src/app/cart/page.tsx), so the CTAs keep the
 // reference layout's styling without a checkout handler.
 //
-// Store pickup / policy copy / installments are NOT in the API — kept static
-// (see PRODUCT-DETAIL-INTEGRACAO/PLANO-INTEGRACAO-PRODUCT-DETAIL.md §5).
-const PICKUP_STORE = LOCATIONS.find((l) => l.name.includes("World Center")) ?? LOCATIONS[0];
+// Policy copy / installments are NOT in the API — kept static (see
+// PRODUCT-DETAIL-INTEGRACAO/PLANO-INTEGRACAO-PRODUCT-DETAIL.md §5). No store
+// pickup copy — Banzylo é 100% online, sem loja física.
 
 const FIELD_LABEL = "block text-xs font-semibold uppercase tracking-wide text-neutral-500";
 // Minimalist: square corners, thin neutral border, compact height.
@@ -179,11 +178,6 @@ export default function ProductPurchasePanel({ product }: { product: ProductDeta
       <p className="mt-3 flex items-center gap-1 text-[0.6875rem] font-semibold uppercase tracking-[0.12em] text-neutral-900">
         <span aria-hidden>⚡</span> Ships same or next day · Next day air available
       </p>
-
-      <div className="mt-4 text-sm">
-        <p className="text-neutral-900">Pickup available at HYP - {PICKUP_STORE.name}</p>
-        <p className="text-neutral-500">Usually ready in 2 hours</p>
-      </div>
 
       <ProductInfoAccordions />
     </div>

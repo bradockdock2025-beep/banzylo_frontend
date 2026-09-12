@@ -9,6 +9,8 @@ export default function AboutSection({ about }: { about: HomeFeaturedData["about
       {about.image && <Image src={about.image} alt="" fill className="object-cover opacity-85" />}
       <div className="absolute inset-0 bg-black/85" />
       <div className="relative z-10 mx-auto max-w-md px-6">
+        {/* Mark is black-on-transparent — inverted to white so it reads on this section's dark background. */}
+        <Image src="/brand/logotipobz.png" alt="Banzylo" width={70} height={56} className="mx-auto mb-4 h-8 w-auto invert" />
         <h2 className="text-2xl font-medium">{about.heading}</h2>
         <p className="mt-4 text-sm text-white/80">{about.paragraph}</p>
         {about.buttonLabel && (

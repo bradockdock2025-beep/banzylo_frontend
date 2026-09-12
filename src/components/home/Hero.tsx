@@ -21,7 +21,7 @@ export default function Hero({ hero }: { hero: HeroApi | null }) {
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={image}
-        alt="Inside the HYP Miami store"
+        alt="Banzylo lifestyle"
         className="absolute inset-0 h-full w-full object-cover"
       />
       <div

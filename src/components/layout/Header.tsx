@@ -31,9 +31,9 @@ const FALLBACK_CATEGORY_ITEMS: NavItem[] = [
 ];
 
 // Institutional pages have no backend endpoint (guide §12) — stay static.
+// No "Locations" entry — Banzylo is 100% online, sem loja física.
 const STATIC_NAV_ITEMS: NavItem[] = [
   { label: "Contact", href: "/contact" },
-  { label: "Locations", href: "/locations" },
   { label: "Sell", href: "https://model-r.lovable.app/hypmiami", external: true },
   { label: "Inquire", href: "/inquire" },
 ];
