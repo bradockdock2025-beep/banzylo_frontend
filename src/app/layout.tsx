@@ -20,9 +20,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "HYP - A Futuristic Sneaker & Streetwear Shopping Experience",
+  title: "Banzylo",
   description:
-    "Shop sneakers, apparel and accessories from Jordan, Nike, Chrome Hearts, Rhude and more at HYP.",
+    "Shop sneakers, apparel and accessories from Jordan, Nike, Chrome Hearts, Rhude and more at Banzylo.",
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
