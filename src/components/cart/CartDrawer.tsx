@@ -9,8 +9,6 @@ import type { CartLineVM } from "@/types/view/cart";
 // Slide-out cart, matching CartCodebase.htm (right drawer, "Cart" header,
 // line items with brand / name / price / variant / qty stepper / remove,
 // footer "Taxes and shipping calculated at checkout" + Checkout button).
-// Guest checkout (POST /orders/guest) is the next phase — the Checkout
-// button is inert for now.
 export default function CartDrawer() {
   const {
     cart,
@@ -18,6 +16,7 @@ export default function CartDrawer() {
     isOpen,
     error,
     closeDrawer,
+    openCheckout,
     setItemQuantity,
     removeItem,
   } = useCart();
@@ -35,6 +34,7 @@ export default function CartDrawer() {
   }, [isOpen, closeDrawer]);
 
   const items = cart?.items ?? [];
+  const hasUnavailable = items.some((line) => !line.available);
 
   // CartProvider applies quantity/remove optimistically (updates this line
   // immediately, reconciles or rolls back in the background — the ~2-3s
@@ -123,15 +123,24 @@ export default function CartDrawer() {
               <span className="font-medium text-neutral-900">${(cart?.subtotal ?? 0).toFixed(2)}</span>
             </div>
             <p className="mt-1 text-xs text-neutral-500">Taxes and shipping calculated at checkout</p>
-            <button
-              type="button"
-              disabled
-              title="Checkout is coming soon"
-              className="mt-3 flex w-full items-center justify-center gap-2 bg-neutral-900 px-6 py-4 text-xs font-semibold uppercase tracking-[0.1em] text-white disabled:opacity-60"
-            >
-              Checkout
-              <span>${(cart?.subtotal ?? 0).toFixed(2)}</span>
-            </button>
+            {hasUnavailable ? (
+              <p
+                title="Remove unavailable items to continue"
+                className="mt-3 flex w-full cursor-not-allowed items-center justify-center gap-2 bg-neutral-200 px-6 py-4 text-xs font-semibold uppercase tracking-[0.1em] text-neutral-400"
+              >
+                Checkout
+                <span>${(cart?.subtotal ?? 0).toFixed(2)}</span>
+              </p>
+            ) : (
+              <button
+                type="button"
+                onClick={openCheckout}
+                className="mt-3 flex w-full items-center justify-center gap-2 bg-neutral-900 px-6 py-4 text-xs font-semibold uppercase tracking-[0.1em] text-white hover:bg-neutral-800"
+              >
+                Checkout
+                <span>${(cart?.subtotal ?? 0).toFixed(2)}</span>
+              </button>
+            )}
           </footer>
         )}
       </aside>

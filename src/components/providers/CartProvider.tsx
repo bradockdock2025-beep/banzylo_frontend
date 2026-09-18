@@ -31,10 +31,14 @@ interface CartContextValue {
   cart: CartVM | null;
   count: number;
   isOpen: boolean;
+  /** Guest-checkout modal (CheckoutModal.tsx) — separate from the cart drawer. */
+  isCheckoutOpen: boolean;
   isBusy: boolean;
   error: string | null;
   openDrawer: () => void;
   closeDrawer: () => void;
+  openCheckout: () => void;
+  closeCheckout: () => void;
   addItem: (variantId: string, quantity?: number) => Promise<void>;
   setItemQuantity: (variantId: string, quantity: number) => Promise<void>;
   removeItem: (variantId: string) => Promise<void>;
@@ -84,6 +88,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [cart, setCart] = useState<CartVM | null>(null);
   const cartRef = useRef<CartVM | null>(null);
   const [isOpen, setIsOpen] = useState(false);
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [isBusy, setIsBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -213,6 +218,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       cart,
       count: cart?.count ?? 0,
       isOpen,
+      isCheckoutOpen,
       isBusy,
       error,
       openDrawer: () => setIsOpen(true),
@@ -220,12 +226,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
         setIsOpen(false);
         setError(null);
       },
+      // Checkout modal always replaces the drawer, never stacks on top of it.
+      openCheckout: () => {
+        setIsOpen(false);
+        setIsCheckoutOpen(true);
+      },
+      closeCheckout: () => setIsCheckoutOpen(false),
       addItem,
       setItemQuantity,
       removeItem,
       emptyCart,
     }),
-    [cart, isOpen, isBusy, error, addItem, setItemQuantity, removeItem, emptyCart]
+    [cart, isOpen, isCheckoutOpen, isBusy, error, addItem, setItemQuantity, removeItem, emptyCart]
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

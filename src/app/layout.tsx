@@ -8,6 +8,7 @@ import { getAnnouncements } from "@/lib/api/announcements";
 import { CatalogCacheProvider } from "@/components/providers/CatalogCacheProvider";
 import { CartProvider } from "@/components/providers/CartProvider";
 import CartDrawer from "@/components/cart/CartDrawer";
+import CheckoutModal from "@/components/checkout/CheckoutModal";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -42,6 +43,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
             <main className="flex-1">{children}</main>
             <Footer />
             <CartDrawer />
+            <CheckoutModal />
           </CartProvider>
         </CatalogCacheProvider>
       </body>

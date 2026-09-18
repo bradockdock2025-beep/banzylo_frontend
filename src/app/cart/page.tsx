@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { Minus, Plus } from "lucide-react";
 import { useCart } from "@/components/providers/CartProvider";
@@ -7,8 +8,24 @@ import { useCart } from "@/components/providers/CartProvider";
 // The cart drawer (CartDrawer.tsx) is the primary surface; this full page is
 // the fallback for a direct /cart visit. Same data, same actions.
 export default function CartPage() {
-  const { cart, isBusy, error, setItemQuantity, removeItem, emptyCart } = useCart();
+  const { cart, isBusy, error, openCheckout, setItemQuantity, removeItem, emptyCart } = useCart();
   const items = cart?.items ?? [];
+  const hasUnavailable = items.some((line) => !line.available);
+
+  // Same optimistic-update pattern as CartDrawer.tsx — `isBusy` no longer
+  // reflects quantity/remove requests (those are optimistic now), so each
+  // line guards only against double-submitting itself.
+  const [pendingVariantId, setPendingVariantId] = useState<string | null>(null);
+
+  function handleQuantity(variantId: string, quantity: number) {
+    setPendingVariantId(variantId);
+    setItemQuantity(variantId, quantity).finally(() => setPendingVariantId(null));
+  }
+
+  function handleRemove(variantId: string) {
+    setPendingVariantId(variantId);
+    removeItem(variantId).finally(() => setPendingVariantId(null));
+  }
 
   if (items.length === 0) {
     return (
@@ -71,8 +88,8 @@ export default function CartPage() {
                   <button
                     type="button"
                     aria-label="Decrease quantity"
-                    disabled={isBusy}
-                    onClick={() => setItemQuantity(line.variantId, line.quantity - 1)}
+                    disabled={pendingVariantId === line.variantId}
+                    onClick={() => handleQuantity(line.variantId, line.quantity - 1)}
                     className="px-2 py-1 disabled:opacity-40"
                   >
                     <Minus className="h-3 w-3" />
@@ -81,8 +98,12 @@ export default function CartPage() {
                   <button
                     type="button"
                     aria-label="Increase quantity"
-                    disabled={isBusy || !line.available || line.quantity >= line.stockAvailable}
-                    onClick={() => setItemQuantity(line.variantId, line.quantity + 1)}
+                    disabled={
+                      pendingVariantId === line.variantId ||
+                      !line.available ||
+                      line.quantity >= line.stockAvailable
+                    }
+                    onClick={() => handleQuantity(line.variantId, line.quantity + 1)}
                     className="px-2 py-1 disabled:opacity-40"
                   >
                     <Plus className="h-3 w-3" />
@@ -90,8 +111,8 @@ export default function CartPage() {
                 </div>
                 <button
                   type="button"
-                  onClick={() => removeItem(line.variantId)}
-                  disabled={isBusy}
+                  onClick={() => handleRemove(line.variantId)}
+                  disabled={pendingVariantId === line.variantId}
                   className="text-xs text-neutral-500 underline hover:text-black disabled:opacity-40"
                 >
                   Remove
@@ -111,14 +132,22 @@ export default function CartPage() {
           <span className="font-medium">${(cart?.subtotal ?? 0).toFixed(2)}</span>
         </div>
         <p className="text-xs text-neutral-500">Taxes and shipping calculated at checkout</p>
-        <button
-          type="button"
-          disabled
-          title="Checkout is coming soon"
-          className="mt-3 w-64 bg-neutral-900 px-6 py-4 text-xs font-semibold uppercase tracking-[0.1em] text-white disabled:opacity-60"
-        >
-          Checkout
-        </button>
+        {hasUnavailable ? (
+          <p
+            title="Remove unavailable items to continue"
+            className="mt-3 w-64 cursor-not-allowed bg-neutral-200 px-6 py-4 text-center text-xs font-semibold uppercase tracking-[0.1em] text-neutral-400"
+          >
+            Checkout
+          </p>
+        ) : (
+          <button
+            type="button"
+            onClick={openCheckout}
+            className="mt-3 w-64 bg-neutral-900 px-6 py-4 text-center text-xs font-semibold uppercase tracking-[0.1em] text-white hover:bg-neutral-800"
+          >
+            Checkout
+          </button>
+        )}
       </div>
     </div>
   );
