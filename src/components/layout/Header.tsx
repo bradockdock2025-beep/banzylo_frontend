@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import AnnouncementBar from "./AnnouncementBar";
 import type { AnnouncementApi } from "@/types/api/announcement";
 import type { CategoryApi } from "@/types/api/category";
 import { resolveCollectionHref } from "@/lib/api/resolve-href";
 import { useCart } from "@/components/providers/CartProvider";
+import { useCustomerAuth } from "@/components/providers/CustomerAuthProvider";
+import { prefetchSearchIndex } from "@/lib/search-index";
 
 interface NavItem {
   label: string;
@@ -60,6 +62,19 @@ export default function Header({
   const [mobileOpen, setMobileOpen] = useState(false);
   const NAV_ITEMS = buildNavItems(categories);
 
+  // Warm the local-first search index (lib/search-index.ts) in the
+  // background so /search's catalog is usually already cached by the time
+  // someone clicks the icon — same idle-callback/timeout-fallback pattern as
+  // CollectionsPrefetch.tsx, just a single request instead of a batch.
+  useEffect(() => {
+    if (typeof window.requestIdleCallback === "function") {
+      const id = window.requestIdleCallback(() => prefetchSearchIndex(), { timeout: 4000 });
+      return () => window.cancelIdleCallback(id);
+    }
+    const timeoutId = window.setTimeout(() => prefetchSearchIndex(), 1000);
+    return () => window.clearTimeout(timeoutId);
+  }, []);
+
   return (
     <header className="sticky top-0 z-50 bg-white text-black">
       <AnnouncementBar announcements={announcements} />
@@ -84,10 +99,8 @@ export default function Header({
         </nav>
 
         <div className="flex items-center gap-4">
-          <Link href="/account" aria-label="Account" className="hidden sm:block">
-            <AccountIcon />
-          </Link>
-          <Link href="/search" aria-label="Search" className="hidden sm:block">
+          <AccountLink />
+          <Link href="/search" aria-label="Search">
             <SearchIcon />
           </Link>
           <CartButton />
@@ -125,6 +138,21 @@ export default function Header({
         </nav>
       )}
     </header>
+  );
+}
+
+// Logged in -> /account, logged out -> /login. `isLoading` (the initial
+// silent-refresh check) keeps the pre-login href so a returning logged-in
+// visitor never sees a flash of the "/login" link before the session
+// restores — landing on /login while already logged in is harmless either
+// way, unlike bouncing straight to /account before the check resolves.
+function AccountLink() {
+  const { customer, isLoading } = useCustomerAuth();
+  const href = !isLoading && customer ? "/account" : "/login";
+  return (
+    <Link href={href} aria-label="Account" className="hidden sm:block">
+      <AccountIcon />
+    </Link>
   );
 }
 

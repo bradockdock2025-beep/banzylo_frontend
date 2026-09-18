@@ -7,6 +7,7 @@ import { getCategories } from "@/lib/api/categories";
 import { getAnnouncements } from "@/lib/api/announcements";
 import { CatalogCacheProvider } from "@/components/providers/CatalogCacheProvider";
 import { CartProvider } from "@/components/providers/CartProvider";
+import { CustomerAuthProvider } from "@/components/providers/CustomerAuthProvider";
 import CartDrawer from "@/components/cart/CartDrawer";
 import CheckoutModal from "@/components/checkout/CheckoutModal";
 
@@ -38,13 +39,15 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="flex min-h-full flex-col">
         <CatalogCacheProvider>
-          <CartProvider>
-            <Header categories={categories} announcements={announcements} />
-            <main className="flex-1">{children}</main>
-            <Footer />
-            <CartDrawer />
-            <CheckoutModal />
-          </CartProvider>
+          <CustomerAuthProvider>
+            <CartProvider>
+              <Header categories={categories} announcements={announcements} />
+              <main className="flex-1">{children}</main>
+              <Footer />
+              <CartDrawer />
+              <CheckoutModal />
+            </CartProvider>
+          </CustomerAuthProvider>
         </CatalogCacheProvider>
       </body>
     </html>

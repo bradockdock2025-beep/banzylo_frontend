@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import PhoneInput, { isValidPhoneNumber, getCountries, type Country } from "react-phone-number-input";
+import PhoneInput, { isValidPhoneNumber, type Country } from "react-phone-number-input";
 import "react-phone-number-input/style.css";
 import {
   Combobox,
@@ -13,6 +13,7 @@ import {
   ComboboxList,
   ComboboxItem,
 } from "@/components/ui/combobox";
+import { useCountryOptions } from "@/lib/countries";
 
 // Backend expects a bare ISO 3166-1 alpha-2 `country` param (2 letters, see
 // GUIA-INTEGRACAO-AUTENTICACAO.md §7) — Banzylo is Angola-focused, so that's
@@ -22,19 +23,6 @@ const DEFAULT_COUNTRY: Country = "AO";
 const LABEL = "block text-xs text-neutral-500";
 const UNDERLINE_FIELD =
   "mt-1 w-full border-0 border-b border-neutral-300 bg-transparent pb-2 text-base text-neutral-900 outline-none focus:border-neutral-900";
-
-// Full country list (~240 entries) sourced from the same libphonenumber-js
-// metadata react-phone-number-input uses for its own country/dial-code
-// picker — not a hand-maintained subset. Intl.DisplayNames (native
-// ECMA-402, no extra dependency) supplies the readable name per ISO code.
-function useCountryOptions() {
-  return useMemo(() => {
-    const displayNames = new Intl.DisplayNames(["en"], { type: "region" });
-    return getCountries()
-      .map((code) => ({ code, name: displayNames.of(code) ?? code }))
-      .sort((a, b) => a.name.localeCompare(b.name));
-  }, []);
-}
 
 export default function GuestContactForm({
   onSubmit,

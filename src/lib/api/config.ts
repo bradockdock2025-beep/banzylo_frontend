@@ -25,6 +25,10 @@ export const REVALIDATE = {
   // purchase intent (stock/price changes matter more here).
   catalogProducts: 60,
   catalogFilters: 60,
+  // The one-shot full-catalog fetch behind the local-first search index
+  // (lib/search-index.ts) — same purchase-intent rationale as
+  // catalogProducts.
+  search: 60,
 } as const;
 
 // Real category UUIDs confirmed live against the backend (2026-08-23) — see
